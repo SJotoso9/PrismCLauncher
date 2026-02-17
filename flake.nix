@@ -142,8 +142,10 @@
 
             packages = with pkgs; [
               ccache
+              clang-tidy-sarif
               llvm.clang-tools
               python3 # NOTE(@getchoo): Required for run-clang-tidy, etc.
+              sarif-fmt
             ];
 
             cmakeBuildType = "Debug";
