@@ -86,8 +86,12 @@
         let
           pkgs = nixpkgsFor.${system};
           llvm = pkgs.llvmPackages_19;
+          useLLVM = pkg: pkg.override { inherit (llvm) stdenv; };
 
           packages' = self.packages.${system};
+          unwrapped = useLLVM packages'.prismlauncher-unwrapped;
+          wrapper = packages'.prismlauncher.override { prismlauncher-unwrapped = unwrapped; };
+          mkShell = useLLVM pkgs.mkShell;
 
           welcomeMessage = ''
             Welcome to the Prism Launcher repository! 🌈
@@ -108,7 +112,7 @@
           '';
 
           # Re-use our package wrapper to wrap our development environment
-          qt-wrapper-env = packages'.prismlauncher.overrideAttrs (old: {
+          qt-wrapper-env = wrapper.overrideAttrs (old: {
             name = "qt-wrapper-env";
 
             # Required to use script-based makeWrapper below
@@ -131,18 +135,19 @@
         in
 
         {
-          default = pkgs.mkShell {
+          default = mkShell {
             name = "prism-launcher";
 
-            inputsFrom = [ packages'.prismlauncher-unwrapped ];
+            inputsFrom = [ unwrapped ];
 
             packages = with pkgs; [
               ccache
               llvm.clang-tools
+              python3 # NOTE(@getchoo): Required for run-clang-tidy, etc.
             ];
 
             cmakeBuildType = "Debug";
-            cmakeFlags = [ "-GNinja" ] ++ packages'.prismlauncher.cmakeFlags;
+            cmakeFlags = [ "-GNinja" ] ++ unwrapped.cmakeFlags;
             dontFixCmake = true;
 
             shellHook = ''
