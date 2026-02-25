@@ -28,8 +28,19 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Setup sccache
+        uses: hendrikmuhs/ccache-action@v1.2.20
+        with:
+          variant: sccache
+
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+
+      - name: Run build
+        run: |
+          nix develop --command bash -c '
+            cmake -B build -D CMAKE_CXX_COMPILER_LAUNCHER=sccache && cmake --build build
+          '
 
       - name: Run clang-tidy
         run: |
